@@ -1,43 +1,11 @@
 {
-  "name": "thatlegendjack-website",
+  "name": "legendjack-site",
   "version": "1.0.0",
-  "description": "Personal streaming website for ThatLegendJack with Twitch integration, leaderboards, and admin panels",
-  "main": "index.html",
+  "main": "server.js",
   "scripts": {
-    "start": "live-server --port=3000 --open=index.html",
-    "dev": "live-server --port=3000 --open=index.html --watch=.",
-    "build": "echo 'No build process needed for static site'",
-    "serve": "http-server -p 3000 -o",
-    "test": "echo 'No tests specified'"
-  },
-  "keywords": [
-    "twitch",
-    "streaming",
-    "website",
-    "gaming",
-    "leaderboards",
-    "spotify",
-    "discord"
-  ],
-  "author": "ThatLegendJack",
-  "license": "MIT",
-  "devDependencies": {
-    "live-server": "^1.2.2",
-    "http-server": "^14.1.1"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "node-fetch": "^2.7.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ThatLegendJack/website.git"
-  },
-  "bugs": {
-    "url": "https://github.com/ThatLegendJack/website/issues"
-  },
-  "homepage": "https://thatlegendjack.com",
-  "engines": {
-    "node": ">=14.0.0"
+    "express": "^4.18.2"
   }
 }
