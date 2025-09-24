@@ -1,17 +1,20 @@
-# Use Nginx as the base image
-FROM nginx:alpine
+# Use Nginx (pinned version, alpine-based)
+FROM nginx:1.25-alpine
 
 # Set working directory inside container
 WORKDIR /usr/share/nginx/html
 
-# Remove default nginx static files
+# Remove default nginx files
 RUN rm -rf ./*
 
-# Copy your static site files into nginx's web directory
+# Copy your static site files
 COPY index.html ./
 
-# Expose port 10000 because Render expects apps to listen on $PORT
+# Copy custom nginx.conf to support $PORT
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port (Render will map this automatically)
 EXPOSE 10000
 
-# Override nginx default command to use $PORT
-CMD ["sh", "-c", "nginx -g 'daemon off;' -c /etc/nginx/nginx.conf -p /usr/share/nginx/html -e /dev/stderr -g 'daemon off;' -g 'error_log /dev/stderr info;'"]
+# Start Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
