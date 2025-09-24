@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Get Spotify Token (PKCE)</title>
+<style>
+  body{font-family:system-ui,Arial,sans-serif;max-width:680px;margin:3rem auto;padding:0 1rem}
+  code, input {font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .row{display:flex;gap:.5rem;margin:.5rem 0}
+  input,button{padding:.6rem;border-radius:8px;border:1px solid #ccc;flex:1}
+  button{cursor:pointer;border:1px solid #555;background:#111;color:#fff}
+  .small{opacity:.8;font-size:.9rem}
+  .ok{color:green}.err{color:#c00}
+</style>
+<body>
+  <h1>Spotify Token (Authorization Code with PKCE)</h1>
+  <p class="small">This will save <code>spotify_access_token</code> in <code>localStorage</code> for your site.</p>
+
+  <div class="row">
+    <input id="client_id" placeholder="Your Spotify Client ID" />
+  </div>
+  <div class="row">
+    <input id="redirect_uri" placeholder="Redirect URI (must match in Spotify app)" />
+  </div>
+  <div class="row">
+    <input id="scopes" value="user-read-currently-playing" />
+  </div>
+  <div class="row">
+    <button id="start">Authorize with Spotify</button>
+  </div>
+
+  <h3>Status</h3>
+  <pre id="status">Idle…</pre>
+
+<script>
+/* === Utility: PKCE bits === */
+function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf)))
+  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+async function sha256(str){ const enc=new TextEncoder().encode(str);
+  return await crypto.subtle.digest('SHA-256', enc); }
+
+/* Save & load between steps */
+const LS_PREFIX='spotify_pkce_';
+const mem = {
+  set(k,v){ localStorage.setItem(LS_PREFIX+k, v); },
+  get(k){ return localStorage.getItem(LS_PREFIX+k); },
+  del(k){ localStorage.removeItem(LS_PREFIX+k); }
+};
+
+const statusEl = document.getElementById('status');
+function log(msg, cls){ statusEl.textContent = msg; if(cls) statusEl.className = cls; }
+
+async function beginAuth(){
+  const client_id = document.getElementById('client_id').value.trim();
+  const redirect_uri = document.getElementById('redirect_uri').value.trim();
+  const scope = document.getElementById('scopes').value.trim();
+  if(!client_id || !redirect_uri){ return log('Please fill Client ID and Redirect URI', 'err'); }
+
+  const code_verifier = b64url(crypto.getRandomValues(new Uint8Array(64)));
+  const code_challenge = b64url(await sha256(code_verifier));
+  mem.set('client_id', client_id);
+  mem.set('redirect_uri', redirect_uri);
+  mem.set('code_verifier', code_verifier);
+
+  const authUrl = new URL('https://accounts.spotify.com/authorize');
+  authUrl.searchParams.set('response_type','code');
+  authUrl.searchParams.set('client_id',client_id);
+  authUrl.searchParams.set('redirect_uri',redirect_uri);
+  authUrl.searchParams.set('code_challenge_method','S256');
+  authUrl.searchParams.set('code_challenge',code_challenge);
+  authUrl.searchParams.set('scope', scope);
+  location.href = authUrl.toString();
+}
+
+async function exchangeCodeForToken(authCode){
+  const client_id = mem.get('client_id');
+  const redirect_uri = mem.get('redirect_uri');
+  const code_verifier = mem.get('code_verifier');
+  if(!client_id || !redirect_uri || !code_verifier){ return log('Missing PKCE values. Start again.', 'err'); }
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code: authCode,
+    redirect_uri,
+    client_id,
+    code_verifier
+  });
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body
+  });
+
+  const data = await res.json();
+  if(!res.ok){ log('Token error: '+JSON.stringify(data), 'err'); return; }
+
+  const access_token = data.access_token;
+  const refresh_token = data.refresh_token;
+
+  // Save for your site to use
+  localStorage.setItem('spotify_access_token', access_token);
+
+  // Optional: remember refresh token (if you’ll use a backend later)
+  localStorage.setItem('spotify_refresh_token', refresh_token || '');
+
+  log('Access token saved to localStorage as "spotify_access_token".', 'ok');
+}
+
+/* Wire UI */
+document.getElementById('start').addEventListener('click', beginAuth);
+
+/* If we returned from Spotify with ?code=... */
+(async function handleRedirect(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+  if(error){ return log('Spotify error: '+error, 'err'); }
+  if(code){
+    log('Exchanging code for token…');
+    await exchangeCodeForToken(code);
+    // Clean URL
+    history.replaceState({}, '', location.pathname);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Leaderboards — ThatLegendJackk</title>
+<style>
+  :root{--ars-red:#EF0107;--ars-white:#FFFFFF;--ars-navy:#063672;--ars-gold:#9C824A}
+  body{margin:0;font-family:Arial,sans-serif;color:#fff;background:linear-gradient(135deg,var(--ars-navy),var(--ars-gold));min-height:100vh}
+  .page{width:min(1200px,95vw);margin:0 auto;padding:2rem 1rem 3rem;display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+  .header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+  .title{background:linear-gradient(160deg,rgba(0,0,0,.65),rgba(0,0,0,.35));border:2px solid var(--ars-white);border-radius:16px;padding:1rem 1.25rem;box-shadow:0 10px 30px rgba(0,0,0,.35);flex:1}
+  .title h1{margin:.25rem 0 .35rem}
+  .btn{display:inline-block;margin-top:.35rem;padding:.5rem .9rem;color:#fff;text-decoration:none;font-weight:700;border:2px solid var(--ars-white);border-radius:10px;background:linear-gradient(135deg,var(--ars-red),var(--ars-gold))}
+  .card{background:linear-gradient(160deg,rgba(0,0,0,.65),rgba(0,0,0,.35));border:2px solid var(--ars-white);border-radius:16px;padding:1.25rem 1.5rem;box-shadow:0 10px 30px rgba(0,0,0,.35);min-height:300px}
+  h2{margin:.25rem 0 .75rem}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:.65rem .5rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
+  th{background:rgba(255,255,255,.08)}
+  .row{display:flex;gap:.5rem;margin:.45rem 0}
+  .row input{flex:1;padding:.5rem;border:none;border-radius:8px}
+  .row button{padding:.5rem .8rem;border:none;border-radius:8px;background:var(--ars-red);color:#fff;font-weight:700;cursor:pointer}
+  @media(max-width:900px){.page{grid-template-columns:1fr}}
+
+  /* BIG SETUP PANEL */
+  .setup{
+    grid-column:1/-1;background:rgba(0,0,0,.85);
+    border:3px dashed var(--ars-gold);border-radius:16px;padding:1.5rem;margin-bottom:1rem;
+    box-shadow:0 10px 30px rgba(0,0,0,.35)
+  }
+  .setup h2{margin:0 0 .5rem}
+  .setup label{display:block;font-weight:700;margin:.75rem 0 .35rem}
+  .setup textarea{
+    width:100%;min-height:70px;padding:.6rem;border:none;border-radius:8px;
+    font-family:monospace;font-size:1rem;resize:vertical
+  }
+  .setup .actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.9rem}
+  .setup .primary{background:var(--ars-gold);color:#000}
+  .setup button{padding:.7rem 1.2rem;border:none;border-radius:8px;font-weight:800;cursor:pointer}
+  .tiny{opacity:.85;font-size:.9rem;margin-top:.25rem}
+  .callout{background:rgba(239,1,7,.15);border-left:4px solid var(--ars-red);padding:.6rem .75rem;border-radius:8px;margin:.75rem 0}
+</style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <div class="header">
+      <div class="title">
+        <h1>Leaderboards</h1>
+        <p>Top supporters across Bits and Gifted Subs.</p>
+        <a class="btn" href="index.html">← Back Home</a>
+      </div>
+    </div>
+
+    <!-- SETUP PANEL (auto-hides once creds are saved) -->
+    <div id="bitsSetup" class="setup">
+      <h2>🛠️ Setup Twitch Bits (requires <code>bits:read</code>)</h2>
+      <div class="callout"><strong>Heads up:</strong> For production, keep tokens server-side. This saves in your browser only.</div>
+      <label for="ci">Client ID</label>
+      <textarea id="ci" placeholder="Paste YOUR CLIENT_ID here"></textarea>
+      <label for="tk">Access Token</label>
+      <textarea id="tk" placeholder="Paste YOUR ACCESS TOKEN (bits:read) here"></textarea>
+      <div class="actions">
+        <button id="apply" class="primary">Apply & Save</button>
+        <button id="clear">Clear Saved Credentials</button>
+      </div>
+      <div class="tiny">These credentials are stored in <code>localStorage</code> on this device & browser until you clear them.</div>
+    </div>
+
+    <!-- LEFT: Bits -->
+    <div class="card">
+      <h2>Top 10 Bits — Live</h2>
+      <table id="bits-table">
+        <thead><tr><th>Rank</th><th>User</th><th>Bits</th></tr></thead>
+        <tbody><tr><td colspan="3">Waiting for Twitch setup…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- RIGHT: Gifted Subs -->
+    <div class="card">
+      <h2>Gifted Subs</h2>
+      <table id="subs-table">
+        <thead><tr><th>#</th><th>User</th><th>Gifted Subs</th><th class="adminCol">Actions</th></tr></thead>
+        <tbody id="subs-body"></tbody>
+      </table>
+      <div id="subsAdmin" style="display:none;margin-top:.75rem">
+        <div class="row">
+          <input id="subUser" placeholder="Username">
+          <input id="subCount" type="number" min="0" placeholder="Count">
+          <button onclick="addSub()">Add/Update</button>
+        </div>
+        <button onclick="clearSubs()">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   ADMIN CHECK (Gifted Subs editor is admin-only)
+   ============================================================ */
+const isAdmin = localStorage.getItem('staffSession')==='true' &&
+                localStorage.getItem('staffRole')==='admin';
+
+/* =============================
+   Gifted Subs (admin editable)
+   ============================= */
+const SUBS_KEY='giftedSubsTable';
+function loadSubs(){ try{return JSON.parse(localStorage.getItem(SUBS_KEY)||'[]')}catch{return[]} }
+function saveSubs(arr){ localStorage.setItem(SUBS_KEY, JSON.stringify(arr)); }
+function renderSubs(){
+  const body=document.getElementById('subs-body');
+  const data=loadSubs().sort((a,b)=>b.count-a.count);
+  body.innerHTML='';
+  if(!data.length){ body.innerHTML='<tr><td colspan="4">No entries yet</td></tr>'; }
+  data.forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${row.user}</td><td>${row.count}</td>
+                    <td class="adminCol">${isAdmin?`<button onclick="removeSub('${row.user.replace(/'/g,"&#39;")}')">Remove</button>`:''}</td>`;
+    body.appendChild(tr);
+  });
+  document.querySelectorAll('.adminCol').forEach(td=> td.style.display=isAdmin?'table-cell':'none');
+  document.getElementById('subsAdmin').style.display = isAdmin ? 'block' : 'none';
+}
+function addSub(){ if(!isAdmin) return;
+  const u=document.getElementById('subUser').value.trim();
+  const c=parseInt(document.getElementById('subCount').value,10);
+  if(!u||isNaN(c)) return;
+  const d=loadSubs();
+  const idx=d.findIndex(x=>x.user.toLowerCase()===u.toLowerCase());
+  if(idx>-1){ d[idx].count=c } else { d.push({user:u,count:c}) }
+  saveSubs(d); document.getElementById('subUser').value=''; document.getElementById('subCount').value='';
+  renderSubs();
+}
+function removeSub(user){ if(!isAdmin) return; const d=loadSubs().filter(x=>x.user!==user); saveSubs(d); renderSubs(); }
+function clearSubs(){ if(!isAdmin) return; if(confirm('Clear all gifted subs?')){ saveSubs([]); renderSubs(); } }
+renderSubs();
+
+/* =============================================
+   Twitch Bits (HELIX) with PERSISTENCE
+   - Enter once: saved to localStorage
+   - Auto-loaded every visit on this device+browser
+   ============================================= */
+
+/* ---- (Optional) Hard-code defaults; they will auto-save on first load ---- */
+const DEFAULT_CLIENT_ID = "";   // put a default here if you want
+const DEFAULT_TOKEN     = "";   // user access token (bits:read)
+
+/* // PERSISTENCE: keys used in localStorage */
+const LS_CLIENT_ID = 'twitch_client_id';
+const LS_TOKEN     = 'twitch_access_token';
+
+let CLIENT_ID = "";
+let TOKEN     = "";
+
+/* // PERSISTENCE: load creds with fallback to defaults */
+function loadCreds(){
+  const savedId = localStorage.getItem(LS_CLIENT_ID) || "";
+  const savedTk = localStorage.getItem(LS_TOKEN) || "";
+  if(savedId && savedTk){
+    CLIENT_ID = savedId;
+    TOKEN = savedTk;
+  }else if(DEFAULT_CLIENT_ID && DEFAULT_TOKEN){
+    CLIENT_ID = DEFAULT_CLIENT_ID;
+    TOKEN = DEFAULT_TOKEN;
+    // auto-save defaults so panel hides next time
+    localStorage.setItem(LS_CLIENT_ID, CLIENT_ID);
+    localStorage.setItem(LS_TOKEN, TOKEN);
+  }
+  // Prefill the UI boxes with whatever we’re using (handy if you reopen panel)
+  const ciEl=document.getElementById('ci'); const tkEl=document.getElementById('tk');
+  if(ciEl) ciEl.value = CLIENT_ID;
+  if(tkEl) tkEl.value = TOKEN;
+}
+
+/* // PERSISTENCE: save creds from UI */
+function saveCreds(ci, tk){
+  localStorage.setItem(LS_CLIENT_ID, ci);
+  localStorage.setItem(LS_TOKEN, tk);
+  CLIENT_ID = ci; TOKEN = tk;
+}
+
+/* Helpers */
+function hasCreds(){ return CLIENT_ID.trim()!=="" && TOKEN.trim()!==""; }
+
+async function helix(path, params = {}) {
+  const url = new URL(`https://api.twitch.tv/helix/${path}`);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== '' && v !== null) url.searchParams.set(k, v);
+  });
+  const res = await fetch(url, {
+    headers: {
+      "Client-Id": CLIENT_ID,
+      "Authorization": `Bearer ${TOKEN}`,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+  }
+  return res.json();
+}
+
+async function getUsersMap(userIds) {
+  if (!userIds.length) return new Map();
+  const url = new URL("https://api.twitch.tv/helix/users");
+  userIds.forEach(id => url.searchParams.append("id", id));
+  const res = await fetch(url, {
+    headers: {
+      "Client-Id": CLIENT_ID,
+      "Authorization": `Bearer ${TOKEN}`,
+    },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const { data } = await res.json();
+  const map = new Map();
+  for (const u of data) map.set(u.id, u);
+  return map;
+}
+
+async function updateBitsLeaderboard() {
+  const tbody = document.querySelector("#bits-table tbody");
+  if (!hasCreds()) {
+    // No credentials: show panel and instruct
+    document.getElementById('bitsSetup').style.display = 'block';
+    tbody.innerHTML = `<tr><td colspan="3">Please add your <strong>Client ID</strong> and <strong>Access Token</strong> above.</td></tr>`;
+    return;
+  }
+  try {
+    const { data: entries } = await helix("bits/leaderboard", { count: 10, period: "all" });
+    const ids = [...new Set(entries.map(e => e.user_id).filter(Boolean))];
+    const usersMap = await getUsersMap(ids);
+
+    tbody.innerHTML = "";
+    entries.forEach(e => {
+      const u = usersMap.get(e.user_id);
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${e.rank}</td>
+        <td>${u?.display_name || u?.login || e.user_id}</td>
+        <td>${e.score.toLocaleString()}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    // Creds good → hide setup panel
+    document.getElementById('bitsSetup').style.display = 'none';
+  } catch (err) {
+    console.error("Error fetching leaderboard:", err);
+    tbody.innerHTML = `<tr><td colspan="3">Error: ${err.message}</td></tr>`;
+    // On error, show the setup panel to re-enter creds
+    document.getElementById('bitsSetup').style.display = 'block';
+  }
+}
+
+/* Wire up UI buttons */
+document.getElementById('apply').addEventListener('click', ()=>{
+  const ci = (document.getElementById('ci').value || "").trim();
+  const tk = (document.getElementById('tk').value || "").trim();
+  if(!ci || !tk){ alert("Please paste both CLIENT_ID and ACCESS TOKEN (bits:read)."); return; }
+  saveCreds(ci, tk);     // PERSISTENCE
+  updateBitsLeaderboard();
+});
+document.getElementById('clear').addEventListener('click', ()=>{
+  if(!confirm("Clear saved Client ID and Access Token from this browser?")) return;
+  localStorage.removeItem(LS_CLIENT_ID);   // PERSISTENCE
+  localStorage.removeItem(LS_TOKEN);       // PERSISTENCE
+  CLIENT_ID = ""; TOKEN = "";
+  document.getElementById('ci').value = "";
+  document.getElementById('tk').value = "";
+  document.getElementById('bitsSetup').style.display = 'block';
+  updateBitsLeaderboard();
+});
+
+/* Init + refresh */
+loadCreds();              // PERSISTENCE: loads once per visit
+updateBitsLeaderboard();
+setInterval(updateBitsLeaderboard, 60000);
+</script>
+</body>
+</html>

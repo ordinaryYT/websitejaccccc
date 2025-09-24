@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login — ThatLegendJackk</title>
+<style>
+  body{margin:0;font-family:Arial, sans-serif;background:#EF0107;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .box{background:rgba(0,0,0,.85);padding:2rem;border-radius:12px;width:min(360px,92vw);text-align:center}
+  input,button{width:100%;padding:.8rem;border:none;border-radius:8px;margin:.5rem 0}
+  button{background:#9C824A;color:#fff;font-weight:700;cursor:pointer}
+  button:hover{background:#063672}
+</style>
+</head>
+<body>
+  <div class="box">
+    <h2>Staff Login</h2>
+    <input id="u" placeholder="Username">
+    <input id="p" type="password" placeholder="Password">
+    <button id="go">Login</button>
+    <p id="msg"></p>
+  </div>
+<script>
+/* === Staff + Admin accounts === */
+const users=[
+  {username:"ThatLegendJack",password:"BooBear24/7",role:"admin"},
+  {username:"staff1",password:"pass1",role:"staff"},
+  {username:"staff2",password:"pass2",role:"staff"}
+];
+
+document.getElementById('go').onclick=()=>{
+  const u=document.getElementById('u').value.trim();
+  const p=document.getElementById('p').value.trim();
+  const user=users.find(x=>x.username===u&&x.password===p);
+  const msg=document.getElementById('msg');
+  if(user){
+    localStorage.setItem('staffSession','true');
+    localStorage.setItem('staffName',user.username);
+    localStorage.setItem('staffRole',user.role);
+    msg.textContent="✅ Logged in. Redirecting…";
+    setTimeout(()=>location.href="index.html",700);
+  }else{
+    msg.textContent="❌ Invalid credentials";
+  }
+};
+</script>
+</body>
+</html>

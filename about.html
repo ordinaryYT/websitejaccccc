@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>About Me — ThatLegendJackk</title>
+<style>
+  :root{--ars-red:#EF0107;--ars-white:#FFF;--ars-navy:#063672;--ars-gold:#9C824A}
+  body{margin:0;font-family:Arial,sans-serif;color:#fff;background:linear-gradient(135deg,var(--ars-red),var(--ars-navy));min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+  .card{width:min(900px,92vw);background:linear-gradient(160deg,rgba(0,0,0,.65),rgba(0,0,0,.35));border:2px solid var(--ars-gold);border-radius:16px;padding:1.5rem 1.75rem;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  h1{margin:.2rem 0 .8rem}
+  textarea{width:100%;min-height:160px;border:none;border-radius:12px;padding:.75rem}
+  .row{display:flex;gap:.5rem;margin-top:.6rem}
+  .row button,a.btn{padding:.6rem 1rem;border:none;border-radius:10px;font-weight:700;cursor:pointer}
+  a.btn{color:#fff;text-decoration:none;border:2px solid var(--ars-white);background:linear-gradient(135deg,var(--ars-red),var(--ars-gold))}
+  .save{background:var(--ars-red);color:#fff}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>About Me</h1>
+    <div id="view"></div>
+
+    <div id="editor" style="display:none">
+      <textarea id="aboutTxt"></textarea>
+      <div class="row">
+        <button class="save" onclick="saveAbout()">Save</button>
+        <a class="btn" href="index.html">← Back Home</a>
+      </div>
+    </div>
+
+    <div id="viewerButtons" class="row" style="margin-top:.6rem">
+      <a class="btn" href="index.html">← Back Home</a>
+    </div>
+  </div>
+
+<script>
+const KEY='about_content';
+function loadAbout(){
+  const val=localStorage.getItem(KEY) || "Welcome to my About page!";
+  document.getElementById('view').textContent=val;
+}
+function saveAbout(){
+  const v=document.getElementById('aboutTxt').value.trim();
+  if(!v) return;
+  localStorage.setItem(KEY,v);
+  loadAbout();
+  alert('Saved.');
+}
+
+function setup(){
+  loadAbout();
+  const staff = localStorage.getItem('staffSession')==='true';
+  if(staff){
+    document.getElementById('editor').style.display='block';
+    document.getElementById('aboutTxt').value=localStorage.getItem(KEY)||'';
+  }else{
+    document.getElementById('editor').style.display='none';
+  }
+}
+setup();
+</script>
+</body>
+</html>

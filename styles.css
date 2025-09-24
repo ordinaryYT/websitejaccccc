@@ -1,0 +1,21 @@
+.panel {
+  position: fixed;
+  background: rgba(0,0,0,.75);
+  border: 2px solid var(--ars-gold);
+  border-radius: 12px;
+  padding: 12px;
+  width: min(360px, 92vw);
+  text-align: left;
+}
+
+#staffPanel { 
+  top: 90px; 
+  right: 20px; 
+  display: none; 
+}
+
+#adminPanel { 
+  top: 20px;      /* moved to very top */
+  left: 20px;     /* pinned left instead of right */
+  display: none; 
+}
