@@ -1,0 +1,12 @@
+{
+  "name": "thatlegendjack-website",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'Building static site' && mkdir -p dist && cp *.html *.css dist/ || true",
+    "dev": "echo 'Static HTML site - use live-server or similar'",
+    "start": "npx serve dist -s"
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
