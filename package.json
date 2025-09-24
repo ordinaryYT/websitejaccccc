@@ -1,8 +1,0 @@
-{
-  "name": "thatlegendjack-website",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "mkdir -p public && cp *.html *.css public/ || exit 0",
-    "start": "echo 'Site is live'"
-  }
-}
